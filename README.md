@@ -206,8 +206,6 @@ The system shows:
 
 ---
 
-## 🎓 Perfect for College Projects
-
 ✅ **Explains ML concepts clearly**  
 ✅ **Shows practical implementation**  
 ✅ **Demonstrates full ML pipeline**  
