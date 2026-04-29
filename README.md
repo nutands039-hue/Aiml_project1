@@ -217,13 +217,3 @@ The system shows:
 
 ---
 
-## 📞 Support
-
-For any issues or questions:
-1. Check the code comments
-2. Review the README documentation
-3. Test with sample CSV file
-
----
-
-**Built with ❤️ for College AI/ML Projects**
