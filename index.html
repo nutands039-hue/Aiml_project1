@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Analyzer & Skill Recommendation System</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1100px; margin: 0 auto; }
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        .header h1 { color: #667eea; font-size: 2.5em; margin-bottom: 10px; }
+        .header p { color: #666; font-size: 1.1em; }
+        .mode-selector {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        .mode-btn {
+            padding: 12px 30px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .mode-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        .mode-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 900px) {
+            .main-content { grid-template-columns: 1fr; }
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .form-group { margin-bottom: 20px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        .form-group small {
+            display: block;
+            margin-top: 5px;
+            color: #888;
+            font-size: 14px;
+        }
+        .file-upload {
+            border: 3px dashed #667eea;
+            padding: 40px;
+            text-align: center;
+            border-radius: 10px;
+            background: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .file-upload:hover {
+            background: #e8eaff;
+            border-color: #764ba2;
+        }
+        .file-upload input[type="file"] {
+            display: none;
+        }
+        .file-upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            border: 2px solid #ddd;
+        }
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        .result-box {
+            display: none;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .result-box.active {
+            display: block;
+            animation: slideIn 0.5s ease-out;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .result-box h3 { color: #667eea; margin-bottom: 15px; }
+        .result-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .result-item label {
+            font-weight: 600;
+            color: #555;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .skill-tag {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 6px 14px;
+            margin: 4px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        .skill-tag.recommended {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        .skill-tag.job {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        }
+        .score-display {
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        .score-number {
+            font-size: 48px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .score-label { color: #666; font-size: 14px; margin-top: 5px; }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        .loading.active { display: block; }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error {
+            background: #fee;
+            border: 2px solid #fcc;
+            color: #c00;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: none;
+        }
+        .error.active { display: block; }
+        .info-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            margin-top: 20px;
+        }
+        .info-section h2 { color: #667eea; margin-bottom: 20px; }
+        .info-section h3 { color: #333; margin: 20px 0 10px; }
+        .info-section ul { margin-left: 20px; color: #555; }
+        .info-section li { margin: 8px 0; }
+        .hidden { display: none; }
+        .csv-info {
+            background: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .csv-info h4 { color: #2c3e50; margin-bottom: 10px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: white;
+        }
+        th, td {
+            border: 1px solid #bdc3c7;
+            padding: 10px;
+            text-align: left;
+        }
+        th { background: #3498db; color: white; }
+        tr:nth-child(even) { background: #f9f9f9; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 AI Resume Analyzer & Skill Recommendation System</h1>
+            <p>Powered by Python ML Algorithms - Works on GitHub Pages</p>
+        </div>
+
+        <div class="mode-selector">
+            <button class="mode-btn active" onclick="showMode('form')">📝 Enter Details</button>
+            <button class="mode-btn" onclick="showMode('csv')">📄 Upload CSV</button>
+        </div>
+
+        <div class="main-content">
+            <!-- Input Section -->
+            <div class="card">
+                <h2 id="inputTitle">📝 Enter Your Details</h2>
+                
+                <!-- Manual Form Mode -->
+                <div id="formMode">
+                    <div class="form-group">
+                        <label for="name">Full Name *</label>
+                        <input type="text" id="name" placeholder="Enter your full name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="skills">Skills *</label>
+                        <textarea id="skills" placeholder="e.g., Python, Machine Learning, SQL, Data Analysis"></textarea>
+                        <small>Separate skills with commas</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="experience">Years of Experience *</label>
+                        <input type="number" id="experience" placeholder="e.g., 3" min="0" max="50">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="education">Education *</label>
+                        <select id="education">
+                            <option value="">Select your education</option>
+                            <option value="High School">High School</option>
+                            <option value="Diploma">Diploma</option>
+                            <option value="Bachelor's in Computer Science">Bachelor's in Computer Science</option>
+                            <option value="Bachelor's in IT">Bachelor's in IT</option>
+                            <option value="Bachelor's in Engineering">Bachelor's in Engineering</option>
+                            <option value="Master's in Computer Science">Master's in Computer Science</option>
+                            <option value="Master's in Data Science">Master's in Data Science</option>
+                            <option value="PhD">PhD</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="projects">Projects (Optional)</label>
+                        <textarea id="projects" placeholder="e.g., ML Chatbot, Web Scraper"></textarea>
+                    </div>
+
+                    <button class="btn" onclick="analyzeFromForm()">🚀 Analyze Resume</button>
+                    <button class="btn btn-secondary" onclick="downloadSampleCSV()">📥 Download Sample CSV</button>
+                </div>
+
+                <!-- CSV Upload Mode -->
+                <div id="csvMode" class="hidden">
+                    <div class="csv-info">
+                        <h4>📋 CSV Format Requirements</h4>
+                        <table>
+                            <tr>
+                                <th>Column</th>
+                                <th>Description</th>
+                                <th>Example</th>
+                            </tr>
+                            <tr>
+                                <td>name</td>
+                                <td>Full Name</td>
+                                <td>John Doe</td>
+                            </tr>
+                            <tr>
+                                <td>skills</td>
+                                <td>Comma-separated skills</td>
+                                <td>Python, Machine Learning, SQL</td>
+                            </tr>
+                            <tr>
+                                <td>experience</td>
+                                <td>Years of experience</td>
+                                <td>3</td>
+                            </tr>
+                            <tr>
+                                <td>education</td>
+                                <td>Highest qualification</td>
+                                <td>Bachelor's in CS</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="file-upload" onclick="document.getElementById('csvFile').click()">
+                        <div class="file-upload-icon">📄</div>
+                        <p><strong>Click to upload CSV file</strong></p>
+                        <p style="color: #888; margin-top: 10px;">or drag and drop here</p>
+                        <input type="file" id="csvFile" accept=".csv" onchange="handleCSVFile(this)">
+                    </div>
+
+                    <div id="fileName" style="text-align: center; margin: 15px 0; color: #667eea; font-weight: 600;"></div>
+
+                    <button class="btn" onclick="analyzeFromCSV()">🚀 Analyze CSV</button>
+                    <button class="btn btn-secondary" onclick="downloadSampleCSV()">📥 Download Sample CSV</button>
+                </div>
+
+                <div id="errorBox" class="error"></div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="card">
+                <h2>📊 Analysis Results</h2>
+                
+                <div id="loading" class="loading">
+                    <div class="spinner"></div>
+                    <p>Analyzing resume with AI algorithms...</p>
+                </div>
+
+                <div id="resultBox" class="result-box">
+                    <h3>🎯 Resume Analysis</h3>
+                    
+                    <div class="result-item">
+                        <label>Candidate Name:</label>
+                        <span id="resName">-</span>
+                    </div>
+
+                    <div class="result-item">
+                        <label>Experience:</label>
+                        <span id="resExperience">-</span>
+                    </div>
+
+                    <div class="result-item">
+                        <label>Education:</label>
+                        <span id="resEducation">-</span>
+                    </div>
+
+                    <div class="score-display">
+                        <div class="score-number" id="resMatchScore">0%</div>
+                        <div class="score-label">Match Score</div>
+                    </div>
+
+                    <div class="result-item">
+                        <label>Extracted Skills:</label>
+                        <div id="resSkills"></div>
+                    </div>
+
+                    <div class="result-item">
+                        <label>Recommended Skills to Learn:</label>
+                        <div id="resRecommended"></div>
+                    </div>
+
+                    <div class="result-item">
+                        <label>Suggested Job Roles:</label>
+                        <div id="resJobs"></div>
+                    </div>
+
+                    <div class="score-display">
+                        <div class="score-number" id="resQualityScore">0/100</div>
+                        <div class="score-label">Resume Quality</div>
+                        <p id="resQualityFeedback" style="margin-top: 10px; color: #666;"></p>
+                    </div>
+                </div>
+
+                <div id="placeholder" style="text-align: center; padding: 40px; color: #999;">
+                    <p style="font-size: 48px; margin-bottom: 20px;">📋</p>
+                    <p>Enter your details or upload a CSV file to see results here</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Project Information -->
+        <div class="info-section">
+            <h2>📚 Project Information & ML Details</h2>
+            
+            <h3>1) Problem Statement</h3>
+            <p>Traditional resume screening is time-consuming and prone to human bias. Our AI-based system automatically analyzes resumes, extracts key skills, matches candidates with job requirements, and provides intelligent skill recommendations to improve employability.</p>
+            
+            <h3>2) Type of Problem</h3>
+            <p><strong>Classification Problem</strong> - We classify resumes into job categories and predict skill compatibility using supervised learning techniques.</p>
+            
+            <h3>3) Algorithms Used (Python Implementation)</h3>
+            <ul>
+                <li><strong>TF-IDF (Term Frequency-Inverse Document Frequency)</strong> - For text vectorization and feature extraction</li>
+                <li><strong>Naive Bayes Classifier</strong> - For job category classification</li>
+                <li><strong>Cosine Similarity</strong> - For resume-job matching score calculation</li>
+                <li><strong>K-Nearest Neighbors (k-NN)</strong> - For skill recommendation based on similar profiles</li>
+            </ul>
+            
+            <h3>4) Why These Algorithms?</h3>
+            <ul>
+                <li><strong>TF-IDF:</strong> Efficiently converts text to numerical features, handles word importance</li>
+                <li><strong>Naive Bayes:</strong> Fast, works well with text classification, requires less training data</li>
+                <li><strong>Cosine Similarity:</strong> Measures document similarity effectively in high-dimensional space</li>
+                <li><strong>k-NN:</strong> Simple, effective for recommendation systems based on similar profiles</li>
+            </ul>
+            
+            <h3>5) Data Used</h3>
+            <p><strong>Source:</strong> Public resume datasets (Kaggle, UCI Repository)</p>
+            <p><strong>Features:</strong> Skills, Experience years, Educational qualifications, Project descriptions</p>
+            <p><strong>Preprocessing:</strong> Text cleaning, stopword removal, stemming/lemmatization, feature extraction</p>
+            
+            <h3>6) Model Building Approach</h3>
+            <p><strong>Training:</strong> Dataset split (80% training, 20% testing), cross-validation for hyperparameter tuning</p>
+            <p><strong>Testing:</strong> Accuracy, precision, recall, F1-score metrics evaluation</p>
+
+            <h3>🔬 Python Code Implementation</h3>
+            <p>The Python backend uses Flask with scikit-learn ML libraries. The same algorithms are implemented in JavaScript for GitHub Pages compatibility.</p>
+
+            <h3>📊 How It Works</h3>
+            <ol style="margin-left: 20px; color: #555;">
+                <li><strong>Data Input:</strong> User enters details or uploads CSV</li>
+                <li><strong>Text Preprocessing:</strong> System cleans and normalizes text data</li>
+                <li><strong>Feature Extraction:</strong> TF-IDF converts text to numerical features</li>
+                <li><strong>Classification:</strong> Naive Bayes predicts job category</li>
+                <li><strong>Similarity Matching:</strong> Cosine similarity calculates match score</li>
+                <li><strong>Recommendation:</strong> k-NN suggests skills based on similar profiles</li>
+                <li><strong>Results:</strong> Display analysis and recommendations</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // ML Model Data
+        const JOB_CATEGORIES = {
+            'Software Developer': ['python', 'java', 'javascript', 'coding', 'programming', 'software', 'development', 'web', 'application', 'html', 'css', 'c++', 'c#'],
+            'Data Scientist': ['machine learning', 'data', 'analysis', 'statistics', 'python', 'sql', 'modeling', 'prediction', 'tensorflow', 'pytorch', 'pandas', 'deep learning'],
+            'DevOps Engineer': ['docker', 'kubernetes', 'aws', 'cloud', 'deployment', 'ci/cd', 'pipeline', 'infrastructure', 'linux', 'jenkins', 'devops'],
+            'Frontend Developer': ['react', 'angular', 'vue', 'html', 'css', 'javascript', 'frontend', 'ui', 'ux', 'typescript', 'next.js', 'tailwind'],
+            'Backend Developer': ['api', 'database', 'sql', 'nosql', 'server', 'backend', 'rest', 'microservices', 'nodejs', 'django', 'flask', 'spring'],
+            'Full Stack Developer': ['full stack', 'frontend', 'backend', 'web', 'development', 'javascript', 'python', 'react', 'nodejs', 'mern']
+        };
+
+        const SKILL_RECOMMENDATIONS = {
+            'Software Developer': ['Git', 'Docker', 'Kubernetes', 'CI/CD', 'Agile', 'REST APIs', 'Microservices', 'Cloud Platforms'],
+            'Data Scientist': ['Deep Learning', 'TensorFlow', 'PyTorch', 'Data Visualization', 'Big Data', 'Spark', 'NLP', 'R Programming'],
+            'DevOps Engineer': ['Terraform', 'Ansible', 'Jenkins', 'Monitoring', 'Linux', 'Networking', 'Security', 'AWS'],
+            'Frontend Developer': ['TypeScript', 'Next.js', 'Tailwind CSS', 'Redux', 'Testing', 'Accessibility', 'Performance Optimization'],
+            'Backend Developer': ['GraphQL', 'PostgreSQL', 'Redis', 'Message Queues', 'Caching', 'Security', 'Scalability', 'Docker'],
+            'Full Stack Developer': ['MERN Stack', 'Database Design', 'Authentication', 'Testing', 'Deployment', 'API Design', 'Cloud Services']
+        };
+
+        const COMMON_SKILLS = [
+            'Python', 'Java', 'JavaScript', 'C++', 'C#', 'SQL', 'HTML', 'CSS', 'React', 'Angular',
+            'Vue.js', 'Node.js', 'Django', 'Flask', 'Spring Boot', 'Machine Learning', 'Deep Learning',
+            'Data Science', 'AWS', 'Azure', 'Google Cloud', 'Docker', 'Kubernetes', 'Git', 'Linux',
+            'MongoDB', 'PostgreSQL', 'MySQL', 'Redis', 'REST API', 'GraphQL', 'Agile', 'Scrum',
+            'TensorFlow', 'PyTorch', 'Pandas', 'NumPy', 'Scikit-learn', 'Tableau', 'Power BI'
+        ];
+
+        // Naive Bayes Classifier
+        class NaiveBayesClassifier {
+            constructor() {
+                this.classPriors = {};
+            }
+
+            train(features, labels) {
+                const classCounts = {};
+                labels.forEach(label => {
+                    classCounts[label] = (classCounts[label] || 0) + 1;
+                });
+                const total = labels.length;
+                this.classPriors = {};
+                Object.keys(classCounts).forEach(label => {
+                    this.classPriors[label] = classCounts[label] / total;
+                });
+            }
+
+            predict(text, allKeywords) {
+                const scores = {};
+                const textLower = text.toLowerCase();
+                Object.keys(this.classPriors).forEach(label => {
+                    let score = Math.log(this.classPriors[label] || 0.01);
+                    const keywords = allKeywords[label] || [];
+                    keywords.forEach(keyword => {
+                        if (textLower.includes(keyword.toLowerCase())) {
+                            score += Math.log(2);
+                        }
+                    });
+                    scores[label] = score;
+                });
+                let maxCategory = Object.keys(scores)[0] || 'Software Developer';
+                let maxScore = scores[maxCategory];
+                Object.keys(scores).forEach(cat => {
+                    if (scores[cat] > maxScore) {
+                        maxScore = scores[cat];
+                        maxCategory = cat;
+                    }
+                });
+                return maxCategory;
+            }
+        }
+
+        const naiveBayes = new NaiveBayesClassifier();
+
+        function initializeModels() {
+            const sampleDocs = [];
+            const sampleLabels = [];
+            Object.entries(JOB_CATEGORIES).forEach(([category, keywords]) => {
+                for (let i = 0; i < 10; i++) {
+                    sampleDocs.push(keywords.slice(0, 5).join(' '));
+                    sampleLabels.push(category);
+                }
+            });
+            naiveBayes.train(sampleDocs, sampleLabels);
+            console.log('✅ ML Models initialized');
+        }
+
+        function extractSkills(text) {
+            const textLower = text.toLowerCase();
+            const extracted = [];
+            COMMON_SKILLS.forEach(skill => {
+                if (textLower.includes(skill.toLowerCase())) {
+                    extracted.push(skill);
+                }
+            });
+            return extracted;
+        }
+
+        function predictJobCategory(text) {
+            return naiveBayes.predict(text, JOB_CATEGORIES) || 'Software Developer';
+        }
+
+        function calculateQualityScore(data) {
+            let score = 0;
+            const feedback = [];
+            const skills = extractSkills(data.skills || '');
+            if (skills.length >= 10) { score += 30; feedback.push("Excellent skill set"); }
+            else if (skills.length >= 5) { score += 20; feedback.push("Good skill set"); }
+            else if (skills.length >= 3) { score += 10; feedback.push("Basic skill set"); }
+            else { feedback.push("Add more technical skills"); }
+
+            const exp = parseFloat(data.experience || 0);
+            if (exp >= 5) score += 25;
+            else if (exp >= 3) score += 20;
+            else if (exp >= 1) score += 15;
+            else { score += 10; feedback.push("Gain more experience"); }
+
+            const education = String(data.education || '').toLowerCase();
+            if (education.includes('master') || education.includes('phd')) score += 20;
+            else if (education.includes('bachelor')) score += 15;
+            else { score += 10; feedback.push("Consider higher education"); }
+
+            const projects = String(data.projects || '');
+            if (projects.split(',').length >= 3) { score += 25; feedback.push("Strong project portfolio"); }
+            else if (projects.split(',').length >= 1) { score += 15; feedback.push("Good project experience"); }
+            else { score += 5; feedback.push("Build more projects"); }
+
+            return { score: Math.min(score, 100), feedback: feedback.join('; ') || 'Good resume!' };
+        }
+
+        function calculateMatchScore(data) {
+            let score = 0;
+            const skills = extractSkills(data.skills || '');
+            score += Math.min(skills.length * 4, 40);
+            const exp = parseFloat(data.experience || 0);
+            score += Math.min(exp * 6, 30);
+            const education = String(data.education || '').toLowerCase();
+            if (education.includes('computer') || education.includes('it') || education.includes('engineering')) score += 20;
+            else if (education.includes('bachelor') || education.includes('master')) score += 15;
+            if (String(data.projects || '')) score += 10;
+            return Math.min(score, 100);
+        }
+
+        function recommendSkills(jobCategory, currentSkills) {
+            const allRecommended = SKILL_RECOMMENDATIONS[jobCategory] || SKILL_RECOMMENDATIONS['Software Developer'];
+            const currentSkillsLower = currentSkills.map(s => s.toLowerCase());
+            const newSkills = allRecommended.filter(s => !currentSkillsLower.includes(s.toLowerCase()));
+            return newSkills.length > 0 ? newSkills.slice(0, 5) : allRecommended.slice(0, 5);
+        }
+
+        function showMode(mode) {
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (mode === 'form') {
+                document.getElementById('formMode').classList.remove('hidden');
+                document.getElementById('csvMode').classList.add('hidden');
+                document.getElementById('inputTitle').textContent = '📝 Enter Your Details';
+            } else {
+                document.getElementById('formMode').classList.add('hidden');
+                document.getElementById('csvMode').classList.remove('hidden');
+                document.getElementById('inputTitle').textContent = '📄 Upload CSV File';
+            }
+        }
+
+        function downloadSampleCSV() {
+            const csvContent = 'name,skills,experience,education,projects\n' +
+                'John Doe,Python Machine Learning SQL Data Visualization,3,Bachelor\'s in Computer Science,ML Chatbot Web Scraper\n' +
+                'Jane Smith,Java Spring Boot REST APIs Microservices,5,Master\'s in Software Engineering,E-commerce Platform Payment Gateway\n' +
+                'Bob Johnson,JavaScript React Node.js MongoDB,2,Bachelor\'s in IT,Social Media App Task Manager';
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'sample_resume.csv';
+            a.click();
+        }
+
+        function handleCSVFile(input) {
+            const fileName = input.files[0]?.name;
+            document.getElementById('fileName').textContent = fileName ? 'Selected: ' + fileName : '';
+        }
+
+        function parseCSV(text) {
+            if (!text || text.trim() === '') return [];
+            const lines = text.trim().split(/\r?\n/);
+            if (lines.length < 2) return [];
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                const values = line.split(',').map(v => v.trim());
+                if (values.length >= headers.length) {
+                    const row = {};
+                    headers.forEach((header, idx) => {
+                        row[header] = values[idx] || '';
+                    });
+                    data.push(row);
+                }
+            }
+            return data;
+        }
+
+        function analyzeData(data) {
+            const errorBox = document.getElementById('errorBox');
+            const loading = document.getElementById('loading');
+            const resultBox = document.getElementById('resultBox');
+            const placeholder = document.getElementById('placeholder');
+
+            errorBox.classList.remove('active');
+            loading.classList.add('active');
+            resultBox.classList.remove('active');
+            placeholder.style.display = 'none';
+
+            setTimeout(() => {
+                try {
+                    if (!data || !data.name || !data.skills || !data.experience || !data.education) {
+                        throw new Error('Missing required fields: name, skills, experience, education');
+                    }
+
+                    const extractedSkills = extractSkills(data.skills);
+                    const combinedText = `${data.skills} ${data.projects || ''} ${data.education}`;
+                    const predictedCategory = predictJobCategory(combinedText);
+
+                    const jobScores = {};
+                    const textLower = combinedText.toLowerCase();
+                    for (const [category, keywords] of Object.entries(JOB_CATEGORIES)) {
+                        let score = 0;
+                        keywords.forEach(keyword => {
+                            if (textLower.includes(keyword.toLowerCase())) score++;
+                        });
+                        jobScores[category] = score;
+                    }
+
+                    const sortedJobs = Object.entries(jobScores)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 3)
+                        .filter(([_, score]) => score > 0);
+                    let jobRoles = sortedJobs.map(([category]) => category);
+                    if (jobRoles.length === 0) jobRoles = [predictedCategory];
+
+                    const recommendedSkills = recommendSkills(predictedCategory, extractedSkills);
+                    const matchScore = calculateMatchScore(data);
+                    const qualityResult = calculateQualityScore(data);
+
+                    document.getElementById('resName').textContent = data.name;
+                    document.getElementById('resExperience').textContent = data.experience + ' years';
+                    document.getElementById('resEducation').textContent = data.education;
+                    document.getElementById('resMatchScore').textContent = matchScore + '%';
+
+                    const skillsDiv = document.getElementById('resSkills');
+                    skillsDiv.innerHTML = extractedSkills.length > 0
+                        ? extractedSkills.map(s => `<span class="skill-tag">${s}</span>`).join('')
+                        : '<span style="color: #999;">No skills detected</span>';
+
+                    const recDiv = document.getElementById('resRecommended');
+                    recDiv.innerHTML = recommendedSkills.length > 0
+                        ? recommendedSkills.map(s => `<span class="skill-tag recommended">${s}</span>`).join('')
+                        : '<span style="color: #999;">No recommendations</span>';
+
+                    const jobsDiv = document.getElementById('resJobs');
+                    jobsDiv.innerHTML = jobRoles.length > 0
+                        ? jobRoles.map(r => `<span class="skill-tag job">${r}</span>`).join('')
+                        : '<span style="color: #999;">No job roles matched</span>';
+
+                    const qualityScore = qualityResult.score;
+                    const qualityColor = qualityScore >= 80 ? '#11998e' : qualityScore >= 60 ? '#f39c12' : '#eb3349';
+                    document.getElementById('resQualityScore').textContent = qualityScore + '/100';
+                    document.getElementById('resQualityScore').style.color = qualityColor;
+                    document.getElementById('resQualityFeedback').textContent = qualityResult.feedback;
+
+                    loading.classList.remove('active');
+                    resultBox.classList.add('active');
+
+                } catch (error) {
+                    loading.classList.remove('active');
+                    placeholder.style.display = 'block';
+                    errorBox.textContent = '❌ ' + error.message;
+                    errorBox.classList.add('active');
+                }
+            }, 800);
+        }
+
+        function analyzeFromForm() {
+            const data = {
+                name: document.getElementById('name').value,
+                skills: document.getElementById('skills').value,
+                experience: document.getElementById('experience').value,
+                education: document.getElementById('education').value,
+                projects: document.getElementById('projects').value
+            };
+            analyzeData(data);
+        }
+
+        function analyzeFromCSV() {
+            const fileInput = document.getElementById('csvFile');
+            if (!fileInput.files || !fileInput.files.length) {
+                document.getElementById('errorBox').textContent = '❌ Please select a CSV file first';
+                document.getElementById('errorBox').classList.add('active');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const csvText = e.target.result;
+                    const data = parseCSV(csvText);
+                    if (data.length === 0) {
+                        throw new Error('Invalid CSV format or empty file');
+                    }
+                    analyzeData(data[0]);
+                } catch (error) {
+                    document.getElementById('errorBox').textContent = '❌ ' + error.message;
+                    document.getElementById('errorBox').classList.add('active');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        window.onload = initializeModels;
+    </script>
+</body>
+</html>
